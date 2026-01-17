@@ -7,19 +7,31 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+async function submit(e) {
+  e.preventDefault();
+  setMsg("");
 
-  async function submit(e) {
-    e.preventDefault();
-    setMsg("");
-    try {
-      const res = await authService.login({ email, password });
-      localStorage.setItem("token", res.data.access_token);
+  try {
+    // 1. LOGIN → TOKEN AL
+    const res = await authService.login({ email, password });
+
+    const token = res.data.access_token;
+    localStorage.setItem("token", token);
+
+    // 2. TOKEN KAYDEDİLDİKTEN SONRA → ME ÇAĞIR
+    const meRes = await authService.me();
+
+    const role = meRes.data.role;
+    localStorage.setItem("role", role);
+
+    // (istersen user id vs de saklayabilirsin)
+    localStorage.setItem("user_mail", meRes.data.mail);
       nav("/dashboard");
-    } catch (err) {
-      setMsg(err.response?.data?.detail || "Login failed");
-    }
-  }
 
+  } catch (err) {
+    setMsg(err.response?.data?.detail || "Login failed");
+  }
+}
   return (
     <div style={{ maxWidth: 420, margin: "60px auto" }}>
       <h2>Login</h2>

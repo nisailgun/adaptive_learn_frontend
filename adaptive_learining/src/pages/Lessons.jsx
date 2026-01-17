@@ -1,43 +1,67 @@
-import { useMemo, useState } from "react";
-
-const INITIAL = [
-  { id: 1, title: "Intro to Java", level: "Beginner" },
-  { id: 2, title: "React Basics", level: "Beginner" },
-];
+import { useEffect, useMemo, useState } from "react";
+import { getLessons, createLesson, updateLesson, deleteLesson } from "../services/lessons";
 
 export default function Lessons() {
-  const [items, setItems] = useState(INITIAL);
+  const [items, setItems] = useState([]);
   const [q, setQ] = useState("");
-  const [form, setForm] = useState({ title: "", level: "Beginner" });
+  const [form, setForm] = useState({ title: "", difficulty: "easy" });
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // GET ALL LESSONS
+  useEffect(() => {
+    fetchLessons();
+  }, []);
+
+  const fetchLessons = async () => {
+    setLoading(true);
+    try {
+      const res = await getLessons();
+      setItems(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     return items.filter((x) => !s || x.title.toLowerCase().includes(s));
   }, [items, q]);
 
-  function submit(e) {
+  // CREATE / UPDATE
+  const submit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
 
-    if (editingId) {
-      setItems((prev) => prev.map((x) => (x.id === editingId ? { ...x, ...form } : x)));
+    try {
+      if (editingId) {
+        await updateLesson(editingId, form);
+      } else {
+        await createLesson(form);
+      }
+      setForm({ title: "", difficulty: "easy" });
       setEditingId(null);
-    } else {
-      setItems((prev) => [{ id: Date.now(), ...form }, ...prev]);
+      fetchLessons(); // refresh list
+    } catch (err) {
+      console.error(err);
     }
+  };
 
-    setForm({ title: "", level: "Beginner" });
-  }
-
-  function edit(item) {
+  const edit = (item) => {
     setEditingId(item.id);
-    setForm({ title: item.title, level: item.level });
-  }
+    setForm({ title: item.title, difficulty: item.difficulty });
+  };
 
-  function remove(id) {
-    setItems((prev) => prev.filter((x) => x.id !== id));
-  }
+  const remove = async (id) => {
+    try {
+      await deleteLesson(id);
+      fetchLessons(); // refresh list
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -58,30 +82,42 @@ export default function Lessons() {
           style={{ flex: 1, minWidth: 220, padding: 10 }}
         />
         <select
-          value={form.level}
-          onChange={(e) => setForm({ ...form, level: e.target.value })}
+          value={form.difficulty}
+          onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
           style={{ padding: 10 }}
         >
-          <option>Beginner</option>
-          <option>Intermediate</option>
-          <option>Advanced</option>
+          <option>easy</option>
+          <option>medium</option>
+          <option>hard</option>
         </select>
         <button type="submit">{editingId ? "Update" : "Create"}</button>
-        {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ title: "", level: "Beginner" }); }}>Cancel</button>}
+        {editingId && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditingId(null);
+              setForm({ title: "", difficulty: "easy" });
+            }}
+          >
+            Cancel
+          </button>
+        )}
       </form>
+
+      {loading && <p>Loading lessons...</p>}
 
       <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
         {filtered.map((x) => (
           <div key={x.id} style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
             <div style={{ fontWeight: 600 }}>{x.title}</div>
-            <div style={{ opacity: 0.8 }}>Level: {x.level}</div>
+            <div style={{ opacity: 0.8 }}>difficulty: {x.difficulty}</div>
             <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
               <button onClick={() => edit(x)}>Edit</button>
               <button onClick={() => remove(x.id)}>Delete</button>
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <p>No lessons found.</p>}
+        {!loading && filtered.length === 0 && <p>No lessons found.</p>}
       </div>
     </div>
   );
