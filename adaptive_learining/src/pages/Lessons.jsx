@@ -8,6 +8,9 @@ export default function Lessons() {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const role = localStorage.getItem("role");
+  const isStudent = role === "student";
+
   // GET ALL LESSONS
   useEffect(() => {
     fetchLessons();
@@ -43,7 +46,7 @@ export default function Lessons() {
       }
       setForm({ title: "", difficulty: "easy" });
       setEditingId(null);
-      fetchLessons(); // refresh list
+      fetchLessons();
     } catch (err) {
       console.error(err);
     }
@@ -57,7 +60,7 @@ export default function Lessons() {
   const remove = async (id) => {
     try {
       await deleteLesson(id);
-      fetchLessons(); // refresh list
+      fetchLessons();
     } catch (err) {
       console.error(err);
     }
@@ -74,35 +77,38 @@ export default function Lessons() {
         style={{ width: "100%", padding: 10, margin: "12px 0" }}
       />
 
-      <form onSubmit={submit} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <input
-          placeholder="Lesson title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          style={{ flex: 1, minWidth: 220, padding: 10 }}
-        />
-        <select
-          value={form.difficulty}
-          onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
-          style={{ padding: 10 }}
-        >
-          <option>easy</option>
-          <option>medium</option>
-          <option>hard</option>
-        </select>
-        <button type="submit">{editingId ? "Update" : "Create"}</button>
-        {editingId && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingId(null);
-              setForm({ title: "", difficulty: "easy" });
-            }}
+      {/* CREATE / UPDATE FORM → SADECE STUDENT DEĞİLSE */}
+      {!isStudent && (
+        <form onSubmit={submit} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <input
+            placeholder="Lesson title"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            style={{ flex: 1, minWidth: 220, padding: 10 }}
+          />
+          <select
+            value={form.difficulty}
+            onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
+            style={{ padding: 10 }}
           >
-            Cancel
-          </button>
-        )}
-      </form>
+            <option>easy</option>
+            <option>medium</option>
+            <option>hard</option>
+          </select>
+          <button type="submit">{editingId ? "Update" : "Create"}</button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingId(null);
+                setForm({ title: "", difficulty: "easy" });
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </form>
+      )}
 
       {loading && <p>Loading lessons...</p>}
 
@@ -110,11 +116,15 @@ export default function Lessons() {
         {filtered.map((x) => (
           <div key={x.id} style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
             <div style={{ fontWeight: 600 }}>{x.title}</div>
-            <div style={{ opacity: 0.8 }}>difficulty: {x.difficulty}</div>
-            <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-              <button onClick={() => edit(x)}>Edit</button>
-              <button onClick={() => remove(x.id)}>Delete</button>
-            </div>
+            <div style={{ opacity: 0.8 }}>Difficulty: {x.difficulty}</div>
+
+            {/* EDIT / DELETE → SADECE STUDENT DEĞİLSE */}
+            {!isStudent && (
+              <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                <button onClick={() => edit(x)}>Edit</button>
+                <button onClick={() => remove(x.id)}>Delete</button>
+              </div>
+            )}
           </div>
         ))}
         {!loading && filtered.length === 0 && <p>No lessons found.</p>}

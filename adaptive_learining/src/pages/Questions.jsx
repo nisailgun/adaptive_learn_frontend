@@ -1,16 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
-import { getQuestions, createQuestion, updateQuestion, deleteQuestion } from "../services/questions";
+import {
+  getQuestions,
+  createQuestion,
+  updateQuestion,
+  deleteQuestion,
+} from "../services/questions";
 import { getLessons } from "../services/lessons";
+
+const PAGE_SIZE = 10;
 
 export default function Questions() {
   const [items, setItems] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [q, setQ] = useState("");
-  const [form, setForm] = useState({ text: "", difficulty: "easy", lesson_id: "", correct_answer: "" });
+  const [form, setForm] = useState({
+    text: "",
+    difficulty: "easy",
+    lesson_id: "",
+    correct_answer: "",
+  });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // GET ALL QUESTIONS ve LESSONS
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // FETCH
   useEffect(() => {
     fetchQuestions();
     fetchLessons();
@@ -21,6 +35,7 @@ export default function Questions() {
     try {
       const res = await getQuestions();
       setItems(res.data);
+      setCurrentPage(1); // refresh sonrası başa dön
     } catch (err) {
       console.error(err);
     } finally {
@@ -40,10 +55,19 @@ export default function Questions() {
     }
   };
 
+  // FILTER
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     return items.filter((x) => !s || x.text.toLowerCase().includes(s));
   }, [items, q]);
+
+  // PAGINATION
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, currentPage]);
 
   // CREATE / UPDATE
   const submit = async (e) => {
@@ -56,7 +80,12 @@ export default function Questions() {
       } else {
         await createQuestion(form);
       }
-      setForm({ text: "", difficulty: "easy", lesson_id: lessons[0]?.id || "", correct_answer: "" });
+      setForm({
+        text: "",
+        difficulty: "easy",
+        lesson_id: lessons[0]?.id || "",
+        correct_answer: "",
+      });
       setEditingId(null);
       fetchQuestions();
     } catch (err) {
@@ -87,18 +116,24 @@ export default function Questions() {
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <h2>Questions</h2>
 
+      {/* SEARCH */}
       <input
         placeholder="Search question..."
         value={q}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setCurrentPage(1);
+        }}
         style={{ width: "100%", padding: 10, margin: "12px 0" }}
       />
 
+      {/* FORM */}
       <form onSubmit={submit} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {/* Lessons dropdown */}
         <select
           value={form.lesson_id}
-          onChange={(e) => setForm({ ...form, lesson_id: Number(e.target.value) })}
+          onChange={(e) =>
+            setForm({ ...form, lesson_id: Number(e.target.value) })
+          }
           style={{ padding: 10 }}
         >
           {lessons.map((lesson) => (
@@ -108,7 +143,6 @@ export default function Questions() {
           ))}
         </select>
 
-        {/* Question text */}
         <input
           placeholder="Question text"
           value={form.text}
@@ -116,18 +150,20 @@ export default function Questions() {
           style={{ flex: 1, minWidth: 260, padding: 10 }}
         />
 
-        {/* Correct answer */}
         <input
           placeholder="Correct answer"
           value={form.correct_answer}
-          onChange={(e) => setForm({ ...form, correct_answer: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, correct_answer: e.target.value })
+          }
           style={{ flex: 1, minWidth: 260, padding: 10 }}
         />
 
-        {/* Difficulty */}
         <select
           value={form.difficulty}
-          onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, difficulty: e.target.value })
+          }
           style={{ padding: 10 }}
         >
           <option>easy</option>
@@ -139,10 +175,15 @@ export default function Questions() {
         {editingId && (
           <button
             type="button"
-            onClick={() =>
-              setForm({ text: "", difficulty: "easy", lesson_id: lessons[0]?.id || "", correct_answer: "" }) ||
-              setEditingId(null)
-            }
+            onClick={() => {
+              setEditingId(null);
+              setForm({
+                text: "",
+                difficulty: "easy",
+                lesson_id: lessons[0]?.id || "",
+                correct_answer: "",
+              });
+            }}
           >
             Cancel
           </button>
@@ -151,23 +192,58 @@ export default function Questions() {
 
       {loading && <p>Loading questions...</p>}
 
+      {/* LIST */}
       <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-        {filtered.map((x) => (
-          <div key={x.id} style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
+        {paginatedItems.map((x) => (
+          <div
+            key={x.id}
+            style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}
+          >
             <div style={{ fontWeight: 600 }}>{x.text}</div>
-            <div style={{ opacity: 0.8 }}>Difficulty: {x.difficulty}</div>
-            <div style={{ opacity: 0.8 }}>
-              Lesson: {lessons.find((l) => l.id === x.lesson_id)?.title || "Unknown"}
+            <div>Difficulty: {x.difficulty}</div>
+            <div>
+              Lesson:{" "}
+              {lessons.find((l) => l.id === x.lesson_id)?.title || "Unknown"}
             </div>
-            <div style={{ opacity: 0.8 }}>Correct Answer: {x.correct_answer}</div>
+            <div>Correct Answer: {x.correct_answer}</div>
             <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
               <button onClick={() => edit(x)}>Edit</button>
               <button onClick={() => remove(x.id)}>Delete</button>
             </div>
           </div>
         ))}
-        {!loading && filtered.length === 0 && <p>No questions found.</p>}
+        {!loading && paginatedItems.length === 0 && <p>No questions found.</p>}
       </div>
+
+      {/* PAGINATION CONTROLS */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            marginTop: 20,
+            display: "flex",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            ◀ Prev
+          </button>
+
+          <span>
+            Page {currentPage} / {totalPages}
+          </span>
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            Next ▶
+          </button>
+        </div>
+      )}
     </div>
   );
 }
