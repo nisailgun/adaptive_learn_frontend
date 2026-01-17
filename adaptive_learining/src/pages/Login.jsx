@@ -25,7 +25,7 @@ async function submit(e) {
     localStorage.setItem("role", role);
 
     // (istersen user id vs de saklayabilirsin)
-    localStorage.setItem("user_mail", meRes.data.mail);
+    localStorage.setItem("user_mail", meRes.data.email);
       nav("/dashboard");
 
   } catch (err) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getLessons } from "../services/lessons";
 import { getQuestionByLesson } from "../services/questions";
+import { answerAndNext } from "../services/questions";
 
 export default function LessonQuestionGenerator() {
   const [lessons, setLessons] = useState([]);
@@ -54,19 +55,44 @@ export default function LessonQuestionGenerator() {
     }
   };
 
-  const handleAnswerSubmit = () => {
-    console.log({
+  const handleAnswerSubmit = async () => {
+  setLoading(true);
+  setError("");
+
+  try {
+    const payload = {
+      email: localStorage.getItem("user_mail"),
       question_id: question.id,
-      answer,
+      answer: answer,
       time_taken_seconds: seconds,
-    });
+    };
 
-    alert(`Cevap kaydedildi (${seconds} saniye)`);
+    const res = await answerAndNext(payload);
 
-    // İleride:
-    // await historyService.create(...)
-  };
+    // cevap doğru mu?
+    const isCorrect = res.data.correct;
 
+    // yeni soru
+    const nextQuestion = res.data.next_question;
+
+    if (!nextQuestion) {
+      setQuestion(null);
+      setError(res.data.message || "Yeni soru yok");
+      return;
+    }
+
+    // ⏱ sayaç ve input reset
+    setAnswer("");
+    setSeconds(0);
+    setQuestion(nextQuestion);
+
+  } catch (err) {
+    
+    setError(err.response?.data?.detail || "Cevap gönderilemedi");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: 20 }}>
       <h2>Ders Seç → Soru Üret</h2>
