@@ -7,43 +7,32 @@ import Lessons from "../pages/Lessons";
 import Questions from "../pages/Questions";
 import History from "../pages/History";
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute() {
   const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" replace />;
+  return token ? <Layout /> : <Navigate to="/login" replace />;
 }
 
 export default function AppRouter() {
   return (
     <Routes>
+      {/* Root */}
       <Route path="/" element={<Navigate to="/login" replace />} />
 
-      <Route path="/login" element={<Layout><Login /></Layout>} />
-      <Route path="/register" element={<Layout><Register /></Layout>} />
+      {/* Public pages (Layout is optional here. İstersen Login/Register da Layout'suz olsun) */}
+      <Route element={<Layout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Route>
 
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Layout><Dashboard /></Layout>
-        </ProtectedRoute>
-      }/>
+      {/* Protected pages */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/lessons" element={<Lessons />} />
+        <Route path="/questions" element={<Questions />} />
+        <Route path="/history" element={<History />} />
+      </Route>
 
-      <Route path="/lessons" element={
-        <ProtectedRoute>
-          <Layout><Lessons /></Layout>
-        </ProtectedRoute>
-      }/>
-
-      <Route path="/questions" element={
-        <ProtectedRoute>
-          <Layout><Questions /></Layout>
-        </ProtectedRoute>
-      }/>
-
-      <Route path="/history" element={
-        <ProtectedRoute>
-          <Layout><History /></Layout>
-        </ProtectedRoute>
-      }/>
-
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

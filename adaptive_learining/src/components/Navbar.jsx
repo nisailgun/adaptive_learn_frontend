@@ -11,23 +11,32 @@ export default function Navbar() {
   }
 
   return (
-    <div style={{ padding: 12, borderBottom: "1px solid #ddd", display: "flex", gap: 12 }}>
-      <strong>Adaptive Learn</strong>
-      {token && (
-        <>
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/lessons">Lessons</Link>
-          <Link to="/questions">Questions</Link>
-          <Link to="/history">History</Link>
-          <button onClick={logout} style={{ marginLeft: "auto" }}>Logout</button>
-        </>
-      )}
-      {!token && (
-        <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
+    <nav className="nav">
+      <div className="container navInner">
+        <div className="brand">
+          <strong>Adaptive Learn</strong>
         </div>
-      )}
-    </div>
+
+        {token && (
+          <div className="navLinks">
+            <Link className="navLink" to="/dashboard">Dashboard</Link>
+            <Link className="navLink" to="/lessons">Lessons</Link>
+            <Link className="navLink" to="/questions">Questions</Link>
+            <Link className="navLink" to="/history">History</Link>
+
+            <button onClick={logout} className="btn ghost" style={{ marginLeft: 8 }}>
+              Logout
+            </button>
+          </div>
+        )}
+
+        {!token && (
+          <div className="navLinks">
+            <Link className="navLink" to="/login">Login</Link>
+            <Link className="navLink" to="/register">Register</Link>
+          </div>
+        )}
+      </div>
+    </nav>
   );
 }
