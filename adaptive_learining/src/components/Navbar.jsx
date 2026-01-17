@@ -23,6 +23,7 @@ export default function Navbar() {
             <Link className="navLink" to="/lessons">Lessons</Link>
             <Link className="navLink" to="/questions">Questions</Link>
             <Link className="navLink" to="/history">History</Link>
+            <Link className="navLink" to="/solving">Solving</Link>
 
             <button onClick={logout} className="btn ghost" style={{ marginLeft: 8 }}>
               Logout

@@ -6,6 +6,8 @@ import Dashboard from "../pages/Dashboard";
 import Lessons from "../pages/Lessons";
 import Questions from "../pages/Questions";
 import History from "../pages/History";
+import LessonQuestionGenerator from "../pages/Solving";
+
 
 function ProtectedRoute() {
   const token = localStorage.getItem("token");
@@ -30,6 +32,8 @@ export default function AppRouter() {
         <Route path="/lessons" element={<Lessons />} />
         <Route path="/questions" element={<Questions />} />
         <Route path="/history" element={<History />} />
+        <Route path="/solving" element={<LessonQuestionGenerator/>}/>
+
       </Route>
 
       {/* Fallback */}
